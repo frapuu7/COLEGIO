@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SGAF | Sistema de Activos Fijos Escolar</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
+</head>
+<body>
+
+  <aside class="sidebar no-print">
+    <div class="brand">
+      <div class="brand-logo">AF</div>
+      <div>
+        <h1>SGAF</h1>
+        <p>Activos Fijos Escolares</p>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <a class="nav-item active" data-view="dashboard" href="#">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span>Inicio</span>
+      </a>
+      <a class="nav-item" data-view="articulos" href="#">
+        <svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg>
+        <span>Artículos / Inventario</span>
+      </a>
+      <a class="nav-item" data-view="productos" href="#">
+        <svg viewBox="0 0 24 24"><path d="M20.6 13.4L11 3H3v8l9.6 10.4a2 2 0 0 0 3-.1l5-5.9a2 2 0 0 0 0-2z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>
+        <span>Catálogo de Productos</span>
+      </a>
+      <a class="nav-item" data-view="proveedores" href="#">
+        <svg viewBox="0 0 24 24"><rect x="1" y="6" width="14" height="10" rx="1"/><path d="M15 10h4l3 3v3h-7z"/><circle cx="6" cy="18.5" r="1.8"/><circle cx="17.5" cy="18.5" r="1.8"/></svg>
+        <span>Proveedores</span>
+      </a>
+      <a class="nav-item" data-view="etiquetas" href="#">
+        <svg viewBox="0 0 24 24"><path d="M4 5h2v14H4zM8 5h1.5v14H8zM11 5h2.5v14H11zM15.5 5H17v14h-1.5zM19 5h1v14h-1z"/></svg>
+        <span>Etiquetas / Códigos</span>
+      </a>
+      <a class="nav-item" data-view="depreciacion" href="#">
+        <svg viewBox="0 0 24 24"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg>
+        <span>Depreciación</span>
+      </a>
+      <a class="nav-item" data-view="reportes" href="#">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
+        <span>Reportes</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <p>v1.0 · Solo Front-end</p>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar no-print">
+      <h2 id="pageTitle">Inicio</h2>
+      <div class="topbar-right">
+        <span id="fechaHoy" class="date-chip"></span>
+        <div class="user-chip">AD</div>
+      </div>
+    </header>
+
+    <section id="view-dashboard" class="view">
+      <div class="cards-grid">
+        <div class="card stat">
+          <p class="stat-label">Activos (estado Activo)</p>
+          <p class="stat-value" id="statTotalActivos">0</p>
+        </div>
+        <div class="card stat">
+          <p class="stat-label">Valor original del parque</p>
+          <p class="stat-value" id="statValorOriginal">$0.00</p>
+        </div>
+        <div class="card stat">
+          <p class="stat-label">Depreciación acumulada (est.)</p>
+          <p class="stat-value danger" id="statDepAcumulada">$0.00</p>
+        </div>
+        <div class="card stat">
+          <p class="stat-label">Valor en libros (est.)</p>
+          <p class="stat-value success" id="statValorLibros">$0.00</p>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>Últimos artículos agregados</h3>
+          <table class="table">
+            <thead><tr><th>Clave</th><th>Nombre</th><th>Categoría</th><th>Costo</th><th>Fecha</th></tr></thead>
+            <tbody id="tblRecientes"></tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3>Distribución por categoría (valor)</h3>
+          <div id="barsCategorias" class="bars"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-articulos" class="view hidden">
+      <div class="toolbar no-print">
+        <input type="text" id="fBuscarArt" placeholder="Buscar por clave, nombre, serie...">
+        <select id="fEstadoArt">
+          <option value="">Todos los estados</option>
+        </select>
+        <select id="fCatArt">
+          <option value="">Todas las categorías</option>
+        </select>
+        <button class="btn primary" id="btnNuevoArt">+ Nuevo artículo</button>
+      </div>
+      <div class="card table-card">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Clave</th><th>Nombre</th><th>Categoría</th><th>No. Serie</th>
+              <th>Ubicación</th><th>Adquisición</th><th>Costo</th><th>Estado</th><th class="no-print">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyArticulos"></tbody>
+        </table>
+        <p class="table-count" id="cntArticulos"></p>
+      </div>
+    </section>
+
+    <section id="view-productos" class="view hidden">
+      <p class="hint no-print">Catálogo maestro de productos generales del colegio. Sirve como base para dar de alta artículos al inventario.</p>
+      <div class="toolbar no-print">
+        <input type="text" id="fBuscarProd" placeholder="Buscar producto...">
+        <button class="btn primary" id="btnNuevoProd">+ Nuevo producto</button>
+      </div>
+      <div class="card table-card">
+        <table class="table">
+          <thead>
+            <tr><th>Código</th><th>Nombre</th><th>Categoría</th><th>Unidad</th><th>Precio referencia</th><th class="no-print">Acciones</th></tr>
+          </thead>
+          <tbody id="tbodyProductos"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="view-proveedores" class="view hidden">
+      <div class="toolbar no-print">
+        <input type="text" id="fBuscarProv" placeholder="Buscar proveedor...">
+        <button class="btn primary" id="btnNuevoProv">+ Nuevo proveedor</button>
+      </div>
+      <div class="card table-card">
+        <table class="table">
+          <thead>
+            <tr><th>Nombre / Razón social</th><th>RFC</th><th>Contacto</th><th>Teléfono</th><th>Email</th><th class="no-print">Acciones</th></tr>
+          </thead>
+          <tbody id="tbodyProveedores"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="view-etiquetas" class="view hidden">
+      <div class="toolbar no-print">
+        <label class="chk-inline"><input type="checkbox" id="chkTodos"> Seleccionar todos</label>
+        <button class="btn primary" id="btnGenerarEtq" disabled>Generar etiquetas</button>
+        <button class="btn ghost" id="btnImprimirEtq" disabled>Imprimir etiquetas</button>
+      </div>
+      <div class="etiquetas-layout">
+        <div class="card lista-etq no-print">
+          <h3>Inventario</h3>
+          <div id="listEtiquetas"></div>
+        </div>
+        <div class="card">
+          <h3 class="no-print">Vista previa de etiquetas</h3>
+          <div id="labelsGrid" class="labels-grid">
+            <p class="empty-msg">Selecciona artículos y presiona “Generar etiquetas”.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-depreciacion" class="view hidden">
+      <div class="dep-layout">
+        <form class="card dep-form" id="formDep">
+          <h3>Calcular depreciación</h3>
+          <div class="field">
+            <label for="depArticulo">Tomar datos de un artículo (opcional)</label>
+            <select id="depArticulo"><option value="">-- Manual --</option></select>
+          </div>
+          <div class="field">
+            <label for="depMetodo">Método</label>
+            <select id="depMetodo">
+              <option value="recta">Línea recta</option>
+              <option value="saldos">Saldos decrecientes doble</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="depCosto">Costo de adquisición ($)</label>
+            <input type="number" id="depCosto" min="0" step="any" required>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="depVida">Vida útil (años)</label>
+              <input type="number" id="depVida" min="1" step="1" required>
+            </div>
+            <div class="field">
+              <label for="depResidual">Valor residual ($)</label>
+              <input type="number" id="depResidual" min="0" step="any" value="0">
+            </div>
+          </div>
+          <div class="field">
+            <label for="depFecha">Fecha de inicio</label>
+            <input type="date" id="depFecha" required>
+          </div>
+          <button type="submit" class="btn primary full" id="btnCalcularDep">Calcular</button>
+        </form>
+
+        <div class="card dep-result">
+          <h3>Resultado</h3>
+          <div id="depResumen" class="cards-grid mini"></div>
+          <div id="wrapDepCal"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Depreciación mensual por activo (línea recta)</h3>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Clave</th><th>Nombre</th><th>Costo</th><th>Vida útil</th>
+              <th>Valor residual</th><th>Dep. mensual</th><th>Dep. acumulada</th><th>Valor en libros</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyDepActivos"></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="5"><strong>Total mensual</strong></td>
+              <td colspan="3"><strong id="totDepMensual">$0.00</strong></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+
+    <section id="view-reportes" class="view hidden">
+      <div class="toolbar no-print">
+        <select id="repCat"><option value="">Todas las categorías</option></select>
+        <select id="repEstado"><option value="">Todos los estados</option></select>
+        <input type="date" id="repDesde" title="Desde">
+        <input type="date" id="repHasta" title="Hasta">
+        <button class="btn primary" id="btnAplicarRep">Aplicar filtros</button>
+        <button class="btn ghost" id="btnCsvRep">Exportar CSV</button>
+        <button class="btn ghost" id="btnPrintRep">Imprimir</button>
+      </div>
+
+      <div class="cards-grid">
+        <div class="card stat"><p class="stat-label">Artículos filtrados</p><p class="stat-value" id="repTotal">0</p></div>
+        <div class="card stat"><p class="stat-label">Valor original</p><p class="stat-value" id="repValor">$0.00</p></div>
+        <div class="card stat"><p class="stat-label">Depreciación acumulada</p><p class="stat-value danger" id="repAcum">$0.00</p></div>
+        <div class="card stat"><p class="stat-label">Valor en libros</p><p class="stat-value success" id="repLibro">$0.00</p></div>
+      </div>
+
+      <div class="card table-card">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Clave</th><th>Nombre</th><th>Categoría</th><th>Proveedor</th>
+              <th>Fecha adquisición</th><th>Costo</th><th>Dep. acumulada</th><th>Valor en libros</th><th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyReportes"></tbody>
+        </table>
+        <p class="table-count" id="cntRep"></p>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal-overlay hidden" id="modalArticulo">
+    <form class="modal" id="formArticulo">
+      <h3 id="tituloModalArt">Nuevo artículo</h3>
+      <input type="hidden" id="artId">
+      <div class="form-grid">
+        <div class="field"><label for="artClave">Clave / No. inventario *</label><input type="text" id="artClave" required></div>
+        <div class="field"><label for="artEstado">Estado</label><select id="artEstado"></select></div>
+        <div class="field span2"><label for="artNombre">Nombre del bien *</label><input type="text" id="artNombre" required></div>
+        <div class="field"><label for="artCategoria">Categoría</label><select id="artCategoria"></select></div>
+        <div class="field"><label for="artUbicacion">Ubicación</label><input type="text" id="artUbicacion" placeholder="Ej. Aula 12, Laboratorio..."></div>
+        <div class="field"><label for="artMarca">Marca</label><input type="text" id="artMarca"></div>
+        <div class="field"><label for="artModelo">Modelo</label><input type="text" id="artModelo"></div>
+        <div class="field"><label for="artSerie">No. de serie</label><input type="text" id="artSerie"></div>
+        <div class="field"><label for="artFecha">Fecha de adquisición *</label><input type="date" id="artFecha" required></div>
+        <div class="field"><label for="artCosto">Costo ($) *</label><input type="number" id="artCosto" min="0" step="any" required></div>
+        <div class="field"><label for="artVida">Vida útil (años)</label><input type="number" id="artVida" min="1" step="1" value="10"></div>
+        <div class="field"><label for="artResidual">Valor residual ($)</label><input type="number" id="artResidual" min="0" step="any" value="0"></div>
+        <div class="field"><label for="artProveedor">Proveedor</label><select id="artProveedor"></select></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" data-close="#modalArticulo">Cancelar</button>
+        <button type="submit" class="btn primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal-overlay hidden" id="modalProducto">
+    <form class="modal" id="formProducto">
+      <h3 id="tituloModalProd">Nuevo producto</h3>
+      <input type="hidden" id="prodId">
+      <div class="form-grid">
+        <div class="field"><label for="prodCodigo">Código *</label><input type="text" id="prodCodigo" required></div>
+        <div class="field"><label for="prodUnidad">Unidad</label><select id="prodUnidad"></select></div>
+        <div class="field span2"><label for="prodNombre">Nombre *</label><input type="text" id="prodNombre" required></div>
+        <div class="field"><label for="prodCategoria">Categoría</label><select id="prodCategoria"></select></div>
+        <div class="field"><label for="prodPrecio">Precio referencia ($)</label><input type="number" id="prodPrecio" min="0" step="any" value="0"></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" data-close="#modalProducto">Cancelar</button>
+        <button type="submit" class="btn primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal-overlay hidden" id="modalProveedor">
+    <form class="modal" id="formProveedor">
+      <h3 id="tituloModalProv">Nuevo proveedor</h3>
+      <input type="hidden" id="provId">
+      <div class="form-grid">
+        <div class="field span2"><label for="provNombre">Nombre / Razón social *</label><input type="text" id="provNombre" required></div>
+        <div class="field"><label for="provRFC">RFC</label><input type="text" id="provRFC" maxlength="13"></div>
+        <div class="field"><label for="provContacto">Contacto</label><input type="text" id="provContacto"></div>
+        <div class="field"><label for="provTelefono">Teléfono</label><input type="tel" id="provTelefono"></div>
+        <div class="field"><label for="provEmail">Email</label><input type="email" id="provEmail"></div>
+        <div class="field span2"><label for="provDireccion">Dirección</label><input type="text" id="provDireccion"></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" data-close="#modalProveedor">Cancelar</button>
+        <button type="submit" class="btn primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

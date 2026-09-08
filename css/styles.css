@@ -70,6 +70,8 @@ body {
   padding: 14px 28px;
 }
 .topbar h2 { font-size: 19px; }
+.topbar-left { display: flex; align-items: center; gap: 12px; }
+.logo-colegio { height: 42px; width: auto; object-fit: contain; }
 .topbar-right { display: flex; align-items: center; gap: 14px; }
 .date-chip { font-size: 13px; color: var(--muted); }
 .user-chip {

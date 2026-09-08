@@ -540,6 +540,10 @@ function generarEtiquetas() {
 
   $("#labelsGrid").innerHTML = items.map((a, i) => `
     <div class="label-card">
+      <div class="label-head">
+        <img src="Logo_Footer.png" alt="" class="label-logo">
+        <span class="label-school">Sistema de Activo Fijo Escolar</span>
+      </div>
       <h4>${esc(a.nombre)}</h4>
       <span class="lc-clave">${esc(a.clave)}</span>
       <span class="lc-meta">${esc(a.categoria)}${a.ubicacion ? " · " + esc(a.ubicacion) : ""}</span>
@@ -832,6 +836,7 @@ $("#btnQuitarFoto").addEventListener("click", () => quitarAdjunto("foto"));
 $("#btnQuitarCopia").addEventListener("click", () => quitarAdjunto("copia"));
 
 $("#fechaHoy").textContent = new Date().toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+if ($("#printFecha")) $("#printFecha").textContent = new Date().toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
 fillSelect($("#fEstadoArt"), ESTADOS, true);
 fillSelect($("#fCatArt"), CATEGORIAS, true);
 activateView("dashboard");

@@ -3,6 +3,10 @@ const $$ = sel => Array.from(document.querySelectorAll(sel));
 
 let db = loadDb();
 let selectedEtq = new Set();
+let pendingFoto = null;
+let pendingCopia = null;
+let quitarSenalFoto = false;
+let quitarSenalCopia = false;
 
 const TITLES = {
   dashboard: "Inicio",
@@ -116,16 +120,22 @@ function renderArticulos() {
   const rows = db.articulos.filter(a =>
     (!est || a.estado === est) &&
     (!cat || a.categoria === cat) &&
-    (!q || [a.clave, a.nombre, a.serie, a.marca, a.ubicacion].some(v => String(v || "").toLowerCase().includes(q)))
+    (!q || [a.clave, a.nombre, a.serie, a.marca, a.ubicacion, a.factura].some(v => String(v || "").toLowerCase().includes(q)))
   );
 
-  $("#tbodyArticulos").innerHTML = rows.map(a => `
+  $("#tbodyArticulos").innerHTML = rows.map(a => {
+    const d = depRecta(a);
+    return `
     <tr class="${a.estado === 'Baja' ? 'row-baja' : ''}">
       <td><strong>${esc(a.clave)}</strong></td>
-      <td>${esc(a.nombre)}</td>
+      <td>${esc(a.nombre)}<br><small class="cell-sub">${esc(a.ubicacion) || ""}</small></td>
       <td>${esc(a.categoria)}</td>
       <td>${esc(a.serie) || "—"}</td>
-      <td>${esc(a.ubicacion) || "—"}</td>
+      <td>${esc(a.factura) || "—"}</td>
+      <td>
+        <button type="button" class="doc-badge ${a.foto ? "ok" : "missing"}" data-ver-adjunto="foto" data-id="${a.id}" title="${a.foto ? "Ver foto del producto" : "Sin foto cargada"}">&#128247; ${a.foto ? "Foto" : "Sin foto"}</button><br>
+        <button type="button" class="doc-badge ${a.copiaArchivo ? "ok" : "missing"}" data-ver-adjunto="copia" data-id="${a.id}" title="${a.copiaArchivo ? "Ver copia de factura" : "Sin copia de factura"}">&#128196; ${a.copiaArchivo ? "Factura" : "Sin factura"}</button>
+      </td>
       <td>${fmtDate(a.fechaAdquisicion)}</td>
       <td>${fmtMoney(a.costo)}</td>
       <td>${badgeEstado(a.estado)}</td>
@@ -135,7 +145,8 @@ function renderArticulos() {
           ${a.estado !== "Baja" ? `<button class="btn danger-sm" data-action="baja-articulo" data-id="${a.id}">Baja</button>` : ""}
         </div>
       </td>
-    </tr>`).join("") || `<tr><td colspan="9" class="empty-msg">No se encontraron artículos.</td></tr>`;
+    </tr>`;
+  }).join("") || `<tr><td colspan="10" class="empty-msg">No se encontraron artículos.</td></tr>`;
 
   $("#cntArticulos").textContent = `${rows.length} artículo(s) · ${db.articulos.length} en total`;
 }
@@ -143,6 +154,10 @@ function renderArticulos() {
 function openModalArticulo(id) {
   const form = $("#formArticulo");
   form.reset();
+  pendingFoto = null;
+  pendingCopia = null;
+  quitarSenalFoto = false;
+  quitarSenalCopia = false;
   fillSelect($("#artCategoria"), CATEGORIAS);
   fillSelect($("#artEstado"), ESTADOS);
   const provOpts = ["<option value=''>-- Sin proveedor --</option>"]
@@ -167,18 +182,139 @@ function openModalArticulo(id) {
     $("#artVida").value = a.vidaUtil || 10;
     $("#artResidual").value = a.valorResidual || 0;
     $("#artProveedor").value = a.proveedorId || "";
+    $("#artFactura").value = a.factura || "";
+    setPreview("foto", a.foto || null, a.fotoDatos || null);
+    setPreview("copia", a.copiaArchivo || null, a.copiaDatos || null);
   } else {
     $("#tituloModalArt").textContent = "Nuevo artículo";
     $("#artId").value = "";
     $("#artClave").value = `AF-${String(db.seqArticulo).padStart(4, "0")}`;
     $("#artFecha").valueAsDate = new Date();
+    $("#artFactura").value = "";
+    setPreview("foto", null, null);
+    setPreview("copia", null, null);
   }
   $("#modalArticulo").classList.remove("hidden");
+}
+
+function isPdf(nombre) {
+  return /\.pdf$/i.test(nombre || "");
+}
+
+function setPreview(tipo, nombre, datos) {
+  const hay = !!(nombre && datos);
+  if (tipo === "foto") {
+    const img = $("#imgFoto");
+    $("#emptyFoto").style.display = hay ? "none" : "";
+    $("#btnQuitarFoto").style.display = hay ? "" : "none";
+    if (hay && !isPdf(nombre)) {
+      img.src = datos;
+      img.classList.remove("preview-hide");
+    } else {
+      img.src = "";
+      img.classList.add("preview-hide");
+    }
+    const tieneFile = $("#artFoto").files && $("#artFoto").files.length > 0;
+    if (hay && !tieneFile) $("#artFoto").value = "";
+  } else {
+    $("#emptyCopia").style.display = hay ? "none" : "";
+    $("#btnQuitarCopia").style.display = hay ? "" : "none";
+    const nameEl = $("#copiaName");
+    if (hay) {
+      nameEl.textContent = nombre;
+      nameEl.classList.remove("preview-hide");
+    } else {
+      nameEl.textContent = "";
+      nameEl.classList.add("preview-hide");
+    }
+  }
+}
+
+function quitarAdjunto(tipo) {
+  if (tipo === "foto") {
+    $("#artFoto").value = "";
+    pendingFoto = null;
+    quitarSenalFoto = true;
+    setPreview("foto", null, null);
+  } else {
+    $("#artCopia").value = "";
+    pendingCopia = null;
+    quitarSenalCopia = true;
+    setPreview("copia", null, null);
+  }
+}
+
+function guardarOrigenAdjunto(tipo) {
+  if (tipo === "foto") {
+    pendingFoto = {
+      nombre: $("#artFoto").files[0].name,
+      datos: null
+    };
+  } else {
+    pendingCopia = {
+      nombre: $("#artCopia").files[0].name,
+      datos: null
+    };
+  }
+}
+
+function leerArchivo(input, tipo) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const maxBytes = 1.5 * 1024 * 1024;
+  if (file.size > maxBytes) {
+    toast("El archivo supera 1.5 MB; sube uno más pequeño.", "err");
+    input.value = "";
+    return;
+  }
+  const isImg = file.type.startsWith("image/");
+  const isPdfFile = /\.pdf$/i.test(file.name);
+  if (tipo === "copia" && !(isImg || isPdfFile)) {
+    toast("La copia debe ser una imagen o un PDF.", "err");
+    input.value = "";
+    return;
+  }
+  if (tipo === "foto" && !isImg) {
+    toast("La foto debe ser una imagen.", "err");
+    input.value = "";
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    setPreview(tipo, file.name, ev.target.result);
+    if (tipo === "foto") {
+      pendingFoto = { nombre: file.name, datos: ev.target.result };
+    } else {
+      pendingCopia = { nombre: file.name, datos: ev.target.result };
+    }
+  };
+  reader.readAsDataURL(file);
 }
 
 function saveArticulo(e) {
   e.preventDefault();
   const idVal = $("#artId").value;
+
+  const prev = idVal ? db.articulos.find(x => x.id == idVal) : null;
+
+  let foto = null, fotoDatos = null, copia = null, copiaDatos = null;
+
+  if (pendingFoto) {
+    foto = pendingFoto.nombre;
+    fotoDatos = pendingFoto.datos;
+  } else if (prev && prev.foto && !quitarSenalFoto) {
+    foto = prev.foto;
+    fotoDatos = prev.fotoDatos || null;
+  }
+
+  if (pendingCopia) {
+    copia = pendingCopia.nombre;
+    copiaDatos = pendingCopia.datos;
+  } else if (prev && prev.copiaArchivo && !quitarSenalCopia) {
+    copia = prev.copiaArchivo;
+    copiaDatos = prev.copiaDatos || null;
+  }
+
   const datos = {
     clave: $("#artClave").value.trim(),
     nombre: $("#artNombre").value.trim(),
@@ -192,7 +328,9 @@ function saveArticulo(e) {
     costo: parseFloat($("#artCosto").value) || 0,
     vidaUtil: parseInt($("#artVida").value) || 10,
     valorResidual: parseFloat($("#artResidual").value) || 0,
-    proveedorId: $("#artProveedor").value ? parseInt($("#artProveedor").value) : null
+    proveedorId: $("#artProveedor").value ? parseInt($("#artProveedor").value) : null,
+    factura: $("#artFactura").value.trim(),
+    foto, fotoDatos, copiaArchivo: copia, copiaDatos
   };
 
   const dup = db.articulos.find(a => a.clave.toLowerCase() === datos.clave.toLowerCase() && String(a.id) !== idVal);
@@ -557,23 +695,24 @@ function aplicarReporte() {
       <td>${esc(a.nombre)}</td>
       <td>${esc(a.categoria)}</td>
       <td>${esc(proveedorNombre(a.proveedorId)) || "—"}</td>
+      <td>${esc(a.factura) || "—"}</td>
       <td>${fmtDate(a.fechaAdquisicion)}</td>
       <td>${fmtMoney(a.costo)}</td>
       <td>${fmtMoney(d.acumulada)}</td>
       <td>${fmtMoney(d.libro)}</td>
       <td>${badgeEstado(a.estado)}</td>
     </tr>`;
-  }).join("") || `<tr><td colspan="9" class="empty-msg">Sin resultados con los filtros aplicados.</td></tr>`;
+  }).join("") || `<tr><td colspan="10" class="empty-msg">Sin resultados con los filtros aplicados.</td></tr>`;
 
   $("#cntRep").textContent = `${repFiltrados.length} registro(s)`;
 }
 
 function exportarCsv() {
   if (!repFiltrados.length) { toast("No hay datos que exportar.", "err"); return; }
-  const head = ["Clave", "Nombre", "Categoria", "Marca", "Modelo", "Serie", "Ubicacion", "Fecha adquisicion", "Costo", "Vida util (anios)", "Valor residual", "Dep. acumulada", "Valor en libros", "Estado", "Proveedor"];
+  const head = ["Clave", "Nombre", "Categoria", "Marca", "Modelo", "Serie", "Ubicacion", "Folio factura", "Fecha adquisicion", "Costo", "Vida util (anios)", "Valor residual", "Dep. acumulada", "Valor en libros", "Estado", "Proveedor"];
   const lines = repFiltrados.map(a => {
     const d = depRecta(a);
-    return [a.clave, a.nombre, a.categoria, a.marca, a.modelo, a.serie, a.ubicacion, a.fechaAdquisicion, a.costo, a.vidaUtil, a.valorResidual, d.acumulada.toFixed(2), d.libro.toFixed(2), a.estado, proveedorNombre(a.proveedorId)]
+    return [a.clave, a.nombre, a.categoria, a.marca, a.modelo, a.serie, a.ubicacion, a.factura, a.fechaAdquisicion, a.costo, a.vidaUtil, a.valorResidual, d.acumulada.toFixed(2), d.libro.toFixed(2), a.estado, proveedorNombre(a.proveedorId)]
       .map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",");
   });
   const csv = "\ufeff" + head.join(",") + "\n" + lines.join("\n");
@@ -589,6 +728,27 @@ function exportarCsv() {
   toast("Reporte CSV descargado.");
 }
 
+function verAdjunto(articulo, tipo) {
+  if (!articulo) return;
+  const foto = tipo === "foto";
+  const nombre = foto ? articulo.foto : articulo.copiaArchivo;
+  const datos = foto ? articulo.fotoDatos : articulo.copiaDatos;
+  $("#tituloAdjunto").textContent = foto ? `Foto: ${articulo.clave}` : `Copia de factura: ${articulo.clave}`;
+
+  if (!nombre || !datos) {
+    $("#contenidoAdjunto").innerHTML = `<p class="adjunto-missing">Este artículo no tiene ${foto ? "foto" : "copia de factura"} registrada.</p>`;
+  } else if (isPdf(nombre)) {
+    $("#contenidoAdjunto").innerHTML = `
+      <div class="adj-links"><a class="btn ghost" href="${esc(datos)}" target="_blank" rel="noopener">Abrir PDF en nueva pestaña</a></div>
+      <iframe src="${esc(datos)}" title="${esc(nombre)}"></iframe>`;
+  } else {
+    $("#contenidoAdjunto").innerHTML = `
+      <div class="adj-links"><a class="btn ghost" href="${esc(datos)}" target="_blank" rel="noopener">Abrir imagen en nueva pestaña</a></div>
+      <img src="${esc(datos)}" alt="${esc(nombre)}">`;
+  }
+  $("#modalVerAdjunto").classList.remove("hidden");
+}
+
 document.addEventListener("click", e => {
   const nav = e.target.closest(".nav-item");
   if (nav) { e.preventDefault(); activateView(nav.dataset.view); return; }
@@ -597,6 +757,13 @@ document.addEventListener("click", e => {
   if (closeBtn) { $(closeBtn.dataset.close).classList.add("hidden"); return; }
 
   if (e.target.classList.contains("modal-overlay")) { e.target.classList.add("hidden"); return; }
+
+  const verBtn = e.target.closest("[data-ver-adjunto]");
+  if (verBtn) {
+    const a = db.articulos.find(x => x.id == parseInt(verBtn.dataset.id));
+    verAdjunto(a, verBtn.dataset.verAdjunto);
+    return;
+  }
 
   const btn = e.target.closest("[data-action]");
   if (!btn) return;
@@ -658,6 +825,11 @@ $("#depArticulo").addEventListener("change", e => {
 $("#btnAplicarRep").addEventListener("click", aplicarReporte);
 $("#btnCsvRep").addEventListener("click", exportarCsv);
 $("#btnPrintRep").addEventListener("click", () => window.print());
+
+$("#artFoto").addEventListener("change", e => leerArchivo(e.target, "foto"));
+$("#artCopia").addEventListener("change", e => leerArchivo(e.target, "copia"));
+$("#btnQuitarFoto").addEventListener("click", () => quitarAdjunto("foto"));
+$("#btnQuitarCopia").addEventListener("click", () => quitarAdjunto("copia"));
 
 $("#fechaHoy").textContent = new Date().toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 fillSelect($("#fEstadoArt"), ESTADOS, true);

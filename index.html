@@ -114,7 +114,7 @@
           <thead>
             <tr>
               <th>Clave</th><th>Nombre</th><th>Categoría</th><th>No. Serie</th>
-              <th>Ubicación</th><th>Adquisición</th><th>Costo</th><th>Estado</th><th class="no-print">Acciones</th>
+              <th>Factura</th><th>Documentos</th><th>Adquisición</th><th>Costo</th><th>Estado</th><th class="no-print">Acciones</th>
             </tr>
           </thead>
           <tbody id="tbodyArticulos"></tbody>
@@ -260,7 +260,7 @@
           <thead>
             <tr>
               <th>Clave</th><th>Nombre</th><th>Categoría</th><th>Proveedor</th>
-              <th>Fecha adquisición</th><th>Costo</th><th>Dep. acumulada</th><th>Valor en libros</th><th>Estado</th>
+              <th>Factura</th><th>Fecha adquisición</th><th>Costo</th><th>Dep. acumulada</th><th>Valor en libros</th><th>Estado</th>
             </tr>
           </thead>
           <tbody id="tbodyReportes"></tbody>
@@ -288,6 +288,25 @@
         <div class="field"><label for="artVida">Vida útil (años)</label><input type="number" id="artVida" min="1" step="1" value="10"></div>
         <div class="field"><label for="artResidual">Valor residual ($)</label><input type="number" id="artResidual" min="0" step="any" value="0"></div>
         <div class="field"><label for="artProveedor">Proveedor</label><select id="artProveedor"></select></div>
+        <div class="field"><label for="artFactura">Folio de factura (opcional)</label><input type="text" id="artFactura" placeholder="Ej. FAC-2026-001234"></div>
+        <div class="field upload-field">
+          <label>Foto del producto (opcional)</label>
+          <input type="file" id="artFoto" accept="image/*" class="file-input">
+          <div class="upload-preview" id="prevFoto">
+            <img id="imgFoto" class="preview-hide" alt="Vista previa">
+            <span class="upload-empty" id="emptyFoto">Sin foto</span>
+            <button type="button" class="btn danger-sm" id="btnQuitarFoto">Quitar</button>
+          </div>
+        </div>
+        <div class="field upload-field">
+          <label>Copia de factura (imagen o PDF, opcional)</label>
+          <input type="file" id="artCopia" accept="image/*,.pdf" class="file-input">
+          <div class="upload-preview" id="prevCopia">
+            <div id="copiaName" class="copia-name preview-hide"></div>
+            <span class="upload-empty" id="emptyCopia">Sin copia de factura</span>
+            <button type="button" class="btn danger-sm" id="btnQuitarCopia">Quitar</button>
+          </div>
+        </div>
       </div>
       <div class="modal-actions">
         <button type="button" class="btn ghost" data-close="#modalArticulo">Cancelar</button>
@@ -334,6 +353,16 @@
   </div>
 
   <div id="toast" class="toast hidden"></div>
+
+  <div class="modal-overlay hidden" id="modalVerAdjunto">
+    <div class="modal adjunto-modal">
+      <div class="adjunto-head">
+        <h3 id="tituloAdjunto">Documento adjunto</h3>
+        <button type="button" class="btn ghost" data-close="#modalVerAdjunto">Cerrar</button>
+      </div>
+      <div id="contenidoAdjunto" class="adjunto-content"></div>
+    </div>
+  </div>
 
   <script src="js/data.js"></script>
   <script src="js/app.js"></script>

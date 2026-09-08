@@ -133,8 +133,8 @@ function renderArticulos() {
       <td>${esc(a.serie) || "—"}</td>
       <td>${esc(a.factura) || "—"}</td>
       <td>
-        <button type="button" class="doc-badge ${a.foto ? "ok" : "missing"}" data-ver-adjunto="foto" data-id="${a.id}" title="${a.foto ? "Ver foto del producto" : "Sin foto cargada"}">&#128247; ${a.foto ? "Foto" : "Sin foto"}</button><br>
-        <button type="button" class="doc-badge ${a.copiaArchivo ? "ok" : "missing"}" data-ver-adjunto="copia" data-id="${a.id}" title="${a.copiaArchivo ? "Ver copia de factura" : "Sin copia de factura"}">&#128196; ${a.copiaArchivo ? "Factura" : "Sin factura"}</button>
+        <button type="button" class="doc-txt ${a.foto ? "ok" : "missing"}" data-ver-adjunto="foto" data-id="${a.id}" title="${a.foto ? "Ver foto del producto" : "Sin foto cargada"}">${a.foto ? "Foto" : "Sin foto"}</button><br>
+        <button type="button" class="doc-txt ${a.copiaArchivo ? "ok" : "missing"}" data-ver-adjunto="copia" data-id="${a.id}" title="${a.copiaArchivo ? "Ver copia de factura" : "Sin copia de factura"}">${a.copiaArchivo ? "Factura" : "Sin factura"}</button>
       </td>
       <td>${fmtDate(a.fechaAdquisicion)}</td>
       <td>${fmtMoney(a.costo)}</td>

@@ -239,6 +239,13 @@ function renderDetalleArticulo(id) {
     <div class="detalle-item span2"><dt>Copia de factura</dt><dd>${copiaHtml}</dd></div>
     ${fotoHtml}
   `;
+
+  if (a.estado === "Baja") {
+    $("#detalleAcciones").innerHTML = `<p class="sin-foto">Este artículo ya está dado de baja.</p>`;
+  } else {
+    $("#detalleAcciones").innerHTML = `
+      <button type="button" class="btn danger" data-action="baja-articulo" data-id="${a.id}">Dar de baja este artículo</button>`;
+  }
   $("#modalDetalleArt").classList.remove("hidden");
 }
 
@@ -402,6 +409,7 @@ function bajaArticulo(id) {
   a.estado = "Baja";
   saveDb(db);
   renderArticulos();
+  $("#modalDetalleArt").classList.add("hidden");
   toast(`Artículo ${a.clave} dado de baja.`);
 }
 
@@ -846,8 +854,7 @@ $("#fBuscarArt").addEventListener("keydown", e => {
   const a = db.articulos.find(x => x.clave.toLowerCase() === valor.toLowerCase());
   if (a) {
     e.preventDefault();
-    if (a.estado !== "Baja") renderDetalleArticulo(a.id);
-    else toast(`El artículo ${a.clave} está dado de baja.`, "err");
+    renderDetalleArticulo(a.id);
   }
 });
 $("#fEstadoArt").addEventListener("change", renderArticulos);

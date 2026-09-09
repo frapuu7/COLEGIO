@@ -141,6 +141,7 @@ function renderArticulos() {
       <td>${badgeEstado(a.estado)}</td>
       <td class="no-print">
         <div class="cell-actions">
+          <button class="btn ghost detail-sm" data-action="detalle-articulo" data-id="${a.id}" title="Ver detalle completo">Ver</button>
           ${a.estado !== "Baja" ? `<button class="btn edit-sm" data-action="edit-articulo" data-id="${a.id}">Editar</button>` : ""}
           ${a.estado !== "Baja" ? `<button class="btn danger-sm" data-action="baja-articulo" data-id="${a.id}">Baja</button>` : ""}
         </div>
@@ -195,6 +196,50 @@ function openModalArticulo(id) {
     setPreview("copia", null, null);
   }
   $("#modalArticulo").classList.remove("hidden");
+  if (!id) $("#artSerie").focus();
+}
+
+function renderDetalleArticulo(id) {
+  const a = db.articulos.find(x => x.id === id);
+  if (!a) return;
+  $("#detalleTitulo").textContent = `Detalle de ${a.clave}`;
+
+  const fotoHtml = a.foto && a.fotoDatos
+    ? `<div class="detalle-foto-area"><img src="${esc(a.fotoDatos)}" alt="${esc(a.foto)}" class="detalle-img"><button type="button" class="btn edit-sm" data-ver-adjunto="foto" data-id="${a.id}">Ver foto completa</button></div>`
+    : `<div class="detalle-foto-area"><span class="sin-foto">Sin foto del producto</span></div>`;
+
+  const copiaHtml = a.copiaArchivo && a.copiaDatos
+    ? `<button type="button" class="btn edit-sm" data-ver-adjunto="copia" data-id="${a.id}">Ver copia de factura</button>`
+    : `<span class="sin-foto">Sin copia de factura</span>`;
+
+  $("#detalleContenido").innerHTML = `
+    <div class="detalle-item">
+      <dt>Clave / No. inventario</dt>
+      <dd><strong>${esc(a.clave)}</strong></dd>
+    </div>
+    <div class="detalle-item">
+      <dt>Estado</dt>
+      <dd>${badgeEstado(a.estado)}</dd>
+    </div>
+    <div class="detalle-item span2">
+      <dt>Nombre del bien</dt>
+      <dd>${esc(a.nombre)}</dd>
+    </div>
+    <div class="detalle-item"><dt>Categoría</dt><dd>${esc(a.categoria)}</dd></div>
+    <div class="detalle-item"><dt>Ubicación</dt><dd>${esc(a.ubicacion) || "—"}</dd></div>
+    <div class="detalle-item"><dt>Marca</dt><dd>${esc(a.marca) || "—"}</dd></div>
+    <div class="detalle-item"><dt>Modelo</dt><dd>${esc(a.modelo) || "—"}</dd></div>
+    <div class="detalle-item"><dt>No. de serie</dt><dd>${esc(a.serie) || "—"}</dd></div>
+    <div class="detalle-item"><dt>Fecha de adquisición</dt><dd>${fmtDate(a.fechaAdquisicion)}</dd></div>
+    <div class="detalle-item"><dt>Costo</dt><dd>${fmtMoney(a.costo)}</dd></div>
+    <div class="detalle-item"><dt>Vida útil</dt><dd>${a.vidaUtil} años</dd></div>
+    <div class="detalle-item"><dt>Valor residual</dt><dd>${fmtMoney(a.valorResidual)}</dd></div>
+    <div class="detalle-item"><dt>Proveedor</dt><dd>${esc(proveedorNombre(a.proveedorId)) || "—"}</dd></div>
+    <div class="detalle-item"><dt>Folio de factura</dt><dd>${esc(a.factura) || "—"}</dd></div>
+    <div class="detalle-item span2"><dt>Copia de factura</dt><dd>${copiaHtml}</dd></div>
+    ${fotoHtml}
+  `;
+  $("#modalDetalleArt").classList.remove("hidden");
 }
 
 function isPdf(nombre) {
@@ -774,6 +819,7 @@ document.addEventListener("click", e => {
   const id = parseInt(btn.dataset.id);
 
   switch (btn.dataset.action) {
+    case "detalle-articulo": renderDetalleArticulo(id); break;
     case "edit-articulo": openModalArticulo(id); break;
     case "baja-articulo": bajaArticulo(id); break;
     case "edit-producto": openModalProducto(id); break;
@@ -793,6 +839,17 @@ $("#btnNuevoProv").addEventListener("click", () => openModalProveedor());
 $("#formProveedor").addEventListener("submit", saveProveedor);
 
 $("#fBuscarArt").addEventListener("input", renderArticulos);
+$("#fBuscarArt").addEventListener("keydown", e => {
+  if (e.key !== "Enter") return;
+  const valor = e.target.value.trim();
+  if (!valor) return;
+  const a = db.articulos.find(x => x.clave.toLowerCase() === valor.toLowerCase());
+  if (a) {
+    e.preventDefault();
+    if (a.estado !== "Baja") renderDetalleArticulo(a.id);
+    else toast(`El artículo ${a.clave} está dado de baja.`, "err");
+  }
+});
 $("#fEstadoArt").addEventListener("change", renderArticulos);
 $("#fCatArt").addEventListener("change", renderArticulos);
 $("#fBuscarProd").addEventListener("input", renderProductos);

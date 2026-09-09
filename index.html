@@ -286,7 +286,7 @@
         <div class="field"><label for="artUbicacion">Ubicación</label><input type="text" id="artUbicacion" placeholder="Ej. Aula 12, Laboratorio..."></div>
         <div class="field"><label for="artMarca">Marca</label><input type="text" id="artMarca"></div>
         <div class="field"><label for="artModelo">Modelo</label><input type="text" id="artModelo"></div>
-        <div class="field"><label for="artSerie">No. de serie</label><input type="text" id="artSerie"></div>
+        <div class="field"><label for="artSerie">No. de serie</label><input type="text" id="artSerie" placeholder="Escriba o escanee el número de serie"></div>
         <div class="field"><label for="artFecha">Fecha de adquisición *</label><input type="date" id="artFecha" required></div>
         <div class="field"><label for="artCosto">Costo ($) *</label><input type="number" id="artCosto" min="0" step="any" required></div>
         <div class="field"><label for="artVida">Vida útil (años)</label><input type="number" id="artVida" min="1" step="1" value="10"></div>
@@ -357,6 +357,16 @@
   </div>
 
   <div id="toast" class="toast hidden"></div>
+
+  <div class="modal-overlay hidden" id="modalDetalleArt">
+    <div class="modal detalle-modal">
+      <div class="detalle-head">
+        <h3 id="detalleTitulo">Detalle del artículo</h3>
+        <button type="button" class="btn ghost" data-close="#modalDetalleArt">Cerrar</button>
+      </div>
+      <div id="detalleContenido" class="detalle-grid"></div>
+    </div>
+  </div>
 
   <div class="modal-overlay hidden" id="modalVerAdjunto">
     <div class="modal adjunto-modal">

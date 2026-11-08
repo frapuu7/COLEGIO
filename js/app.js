@@ -627,6 +627,52 @@ function dibujarBarcodes() {
   });
 }
 
+const ETQ_TAMANO_KEY = "sgaf_etq_tamano";
+
+function sincronizarPresetEtq() {
+  const actual = `${parseFloat($("#etqAncho").value)}x${parseFloat($("#etqAlto").value)}`;
+  $("#etqPreset").value = [...$("#etqPreset").options].some(o => o.value === actual) ? actual : "";
+}
+
+function cargarTamanoEtq() {
+  const [ancho, alto] = (localStorage.getItem(ETQ_TAMANO_KEY) || "").split("x");
+  if (ancho && alto) {
+    $("#etqAncho").value = ancho;
+    $("#etqAlto").value = alto;
+  }
+  sincronizarPresetEtq();
+}
+
+function limpiarImpresionEtq() {
+  document.body.classList.remove("print-etq", "etq-compacta");
+  const estilo = $("#etqPageStyle");
+  if (estilo) estilo.remove();
+}
+
+function imprimirEtiquetas() {
+  const ancho = parseFloat($("#etqAncho").value);
+  const alto = parseFloat($("#etqAlto").value);
+  if (!(ancho >= 20 && ancho <= 104 && alto >= 15 && alto <= 300)) {
+    toast("Captura un tamaño válido (ancho 20-104 mm, alto 15-300 mm).", "err");
+    return;
+  }
+  localStorage.setItem(ETQ_TAMANO_KEY, `${ancho}x${alto}`);
+
+  limpiarImpresionEtq();
+  document.documentElement.style.setProperty("--etq-w", `${ancho}mm`);
+  document.documentElement.style.setProperty("--etq-h", `${alto}mm`);
+  document.body.classList.add("print-etq");
+  document.body.classList.toggle("etq-compacta", alto < 40);
+
+  // Solo existe durante esta impresión para no afectar a Reportes.
+  const estilo = document.createElement("style");
+  estilo.id = "etqPageStyle";
+  estilo.textContent = `@page { size: ${ancho}mm ${alto}mm; margin: 0; }`;
+  document.head.appendChild(estilo);
+
+  window.print();
+}
+
 function renderTablaDep() {
   const sel = $("#depArticulo");
   const prev = sel.value;
@@ -878,7 +924,17 @@ $("#chkTodos").addEventListener("change", e => {
 });
 
 $("#btnGenerarEtq").addEventListener("click", generarEtiquetas);
-$("#btnImprimirEtq").addEventListener("click", () => window.print());
+$("#btnImprimirEtq").addEventListener("click", imprimirEtiquetas);
+window.addEventListener("afterprint", limpiarImpresionEtq);
+$("#etqPreset").addEventListener("change", e => {
+  if (!e.target.value) return;
+  const [ancho, alto] = e.target.value.split("x");
+  $("#etqAncho").value = ancho;
+  $("#etqAlto").value = alto;
+});
+$("#etqAncho").addEventListener("input", sincronizarPresetEtq);
+$("#etqAlto").addEventListener("input", sincronizarPresetEtq);
+cargarTamanoEtq();
 
 $("#formDep").addEventListener("submit", calcularDepreciacion);
 $("#depArticulo").addEventListener("change", e => {

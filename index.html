@@ -163,6 +163,17 @@
         <label class="chk-inline"><input type="checkbox" id="chkTodos"> Seleccionar todos</label>
         <button class="btn primary" id="btnGenerarEtq" disabled>Generar etiquetas</button>
         <button class="btn ghost" id="btnImprimirEtq" disabled>Imprimir etiquetas</button>
+        <select id="etqPreset" title="Tamaño de etiqueta">
+          <option value="">Tamaño personalizado</option>
+          <option value="50.8x25.4">2" x 1" (50.8 x 25.4 mm)</option>
+          <option value="57x32">2.25" x 1.25" (57 x 32 mm)</option>
+          <option value="76.2x25.4">3" x 1" (76.2 x 25.4 mm)</option>
+          <option value="76.2x50.8">3" x 2" (76.2 x 50.8 mm)</option>
+          <option value="101.6x50.8">4" x 2" (101.6 x 50.8 mm)</option>
+          <option value="101.6x152.4">4" x 6" (101.6 x 152.4 mm)</option>
+        </select>
+        <label class="chk-inline etq-size">Ancho <input type="number" id="etqAncho" min="20" max="104" step="0.1" value="50.8"> mm</label>
+        <label class="chk-inline etq-size">Alto <input type="number" id="etqAlto" min="15" max="300" step="0.1" value="25.4"> mm</label>
       </div>
       <div class="etiquetas-layout">
         <div class="card lista-etq no-print">
